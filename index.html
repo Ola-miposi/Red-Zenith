@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>World Bible</title>
+
+<!-- PWA install metadata -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0c0d10" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="icon" href="icon-192.png" />
+
+<!-- Tailwind (CDN build, no compile step) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- React + Babel (lets us write JSX directly in the browser) -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  html, body, #root { height: 100%; margin: 0; }
+  body { background: #0c0d10; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn 300ms cubic-bezier(0.4, 0, 0.2, 1); }
+
+  .panel-transition { transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1); }
+  .backdrop-transition { transition: opacity 300ms ease; }
+
+  /* visible focus ring for keyboard users */
+  button:focus-visible {
+    outline: 2px solid #c9a24b;
+    outline-offset: 2px;
+  }
+
+  /* respect reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in, .panel-transition, .backdrop-transition { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+
+const { useState, useEffect, useRef } = React;
+
+/* ---------------------------------------------------------------
+   Section data — replace the placeholder `content` with your
+   real World Bible / Timeline / Power System / etc. JSX.
+----------------------------------------------------------------*/
+const sections = [
+  { id: "world-bible",        number: "01",  title: "World Bible",          content: <p>Replace with your World Bible content.</p> },
+  { id: "timeline-archive",   number: "02",  title: "Timeline Archive",     content: <p>Replace with your Timeline Archive content.</p> },
+  { id: "power-system",       number: "03",  title: "Power System",        content: <p>Replace with your Power System content.</p> },
+  { id: "faction-database",   number: "04",  title: "Faction Database",    content: <p>Replace with your Faction Database content.</p> },
+  { id: "character-database", number: "07",  title: "Character Database", content: <p>Replace with your Character Database content.</p> },
+  { id: "visual-bible",       number: "08",  title: "Visual Bible",        content: <p>Replace with your Visual Bible content.</p> },
+  { id: "media-canon",        number: "09",  title: "Media Canon Archive", content: <p>Replace with your Media Canon Archive content.</p> },
+  { id: "glossary",           number: "Apx", title: "Glossary",            content: <p>Replace with your Glossary content.</p> },
+];
+
+function SidebarToggleTab({ sidebarOpen, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
+      aria-expanded={sidebarOpen}
+      className="fixed left-0 top-0 z-50 flex h-full w-9 flex-col items-center justify-center
+                 border-r border-[#2a2c33] bg-[#15161a] text-[#c9a24b]
+                 transition-colors duration-200 hover:bg-[#1c1e24]"
+    >
+      <span className="text-lg leading-none">☰</span>
+    </button>
+  );
+}
+
+function Sidebar({ sections, activeSection, onSelect }) {
+  return (
+    <nav className="h-full w-full overflow-y-auto bg-[#15161a] py-8 pl-11 pr-4 shadow-2xl">
+      <div className="mb-8 px-2">
+        <p className="text-xs uppercase tracking-[0.2em] text-[#7a7d87]">Navigation</p>
+        <h2 className="mt-1 font-serif text-xl text-[#e7e3d8]">IP Bible</h2>
+      </div>
+      <ul className="space-y-1">
+        {sections.map((section) => {
+          const isActive = section.id === activeSection;
+          return (
+            <li key={section.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(section.id)}
+                aria-current={isActive ? "page" : undefined}
+                className={
+                  "flex w-full items-baseline gap-3 rounded-md px-3 py-2.5 text-left transition-colors duration-150 " +
+                  (isActive
+                    ? "bg-[#c9a24b]/15 text-[#c9a24b]"
+                    : "text-[#c4c2ba] hover:bg-white/5 hover:text-[#e7e3d8]")
+                }
+              >
+                <span className="font-mono text-xs text-[#7a7d87]">{section.number}</span>
+                <span className="text-sm">{section.title}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+function MainContent({ section }) {
+  return (
+    <div className="h-full w-full overflow-y-auto pl-9">
+      <article key={section.id} className="fade-in mx-auto max-w-3xl px-6 py-16 sm:px-10">
+        <p className="font-mono text-xs uppercase tracking-[0.25em] text-[#c9a24b]">{section.number}</p>
+        <h1 className="mt-2 font-serif text-4xl text-[#e7e3d8] sm:text-5xl">{section.title}</h1>
+        <div className="mt-10 space-y-5 text-[15px] leading-7 text-[#c4c2ba]">{section.content}</div>
+      </article>
+    </div>
+  );
+}
+
+function AppLayout() {
+  const [activeSection, setActiveSection] = useState(sections[0].id);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef(null);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    function handlePointerDown(event) {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setSidebarOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setSidebarOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [sidebarOpen]);
+
+  function handleSelect(id) {
+    setActiveSection(id);
+    setSidebarOpen(false);
+  }
+
+  const activeData = sections.find((s) => s.id === activeSection);
+
+  return (
+    <div className="relative h-screen w-screen overflow-hidden bg-[#0c0d10] text-[#e7e3d8]">
+      <SidebarToggleTab sidebarOpen={sidebarOpen} onToggle={() => setSidebarOpen((o) => !o)} />
+
+      <div
+        className={
+          "backdrop-transition fixed inset-0 z-30 bg-black/50 " +
+          (sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0")
+        }
+      />
+
+      <div
+        ref={sidebarRef}
+        className={
+          "panel-transition fixed left-0 top-0 z-40 h-full w-[85%] sm:w-80 md:w-96 " +
+          (sidebarOpen ? "translate-x-0" : "-translate-x-full")
+        }
+        aria-hidden={!sidebarOpen}
+      >
+        <Sidebar sections={sections} activeSection={activeSection} onSelect={handleSelect} />
+      </div>
+
+      <MainContent section={activeData} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<AppLayout />);
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
