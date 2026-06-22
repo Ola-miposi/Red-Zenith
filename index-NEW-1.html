@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>World Bible</title>
+
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0c0d10" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="icon" href="icon-192.png" />
+
+<style>
+  :root {
+    --bg: #0c0d10;
+    --panel: #15161a;
+    --border: #2a2c33;
+    --gold: #c9a24b;
+    --text: #e7e3d8;
+    --muted: #c4c2ba;
+    --faint: #7a7d87;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Georgia, "Times New Roman", serif;
+    overflow: hidden;
+  }
+
+  .app {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+  }
+
+  /* --- Toggle tab --- */
+  .toggle-tab {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    height: 100%;
+    width: 36px;
+    background: var(--panel);
+    border: none;
+    border-right: 1px solid var(--border);
+    color: var(--gold);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 200ms ease;
+  }
+  .toggle-tab:hover { background: #1c1e24; }
+  .toggle-tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* --- Backdrop --- */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+  .backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* --- Sidebar panel --- */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 40;
+    height: 100%;
+    width: 85%;
+    max-width: 360px;
+    transform: translateX(-100%);
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--panel);
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    overflow-y: auto;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  @media (min-width: 640px) {
+    .sidebar { width: 320px; }
+  }
+  @media (min-width: 768px) {
+    .sidebar { width: 384px; }
+  }
+
+  .sidebar-inner {
+    padding: 32px 16px 32px 44px;
+  }
+
+  .sidebar-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--faint);
+    margin: 0;
+  }
+
+  .sidebar-title {
+    margin: 4px 0 0;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .nav-list {
+    list-style: none;
+    margin: 32px 0 0;
+    padding: 0;
+  }
+
+  .nav-item button {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  .nav-item button:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+  .nav-item button.active {
+    background: rgba(201, 162, 75, 0.15);
+    color: var(--gold);
+  }
+  .nav-number {
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    color: var(--faint);
+  }
+  .nav-item button.active .nav-number { color: var(--gold); }
+
+  /* --- Main content --- */
+  .main {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    padding-left: 36px;
+  }
+
+  .article {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 24px;
+    animation: fadeIn 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    margin: 0;
+  }
+
+  .heading {
+    margin: 8px 0 0;
+    font-size: 36px;
+    color: var(--text);
+  }
+
+  .body-text {
+    margin-top: 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  .body-text p { margin: 0 0 18px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar, .backdrop, .article { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <button class="toggle-tab" id="toggleTab" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <div class="backdrop" id="backdrop"></div>
+  <nav class="sidebar" id="sidebar" aria-hidden="true">
+    <div class="sidebar-inner">
+      <p class="sidebar-label">Navigation</p>
+      <h2 class="sidebar-title">IP Bible</h2>
+      <ul class="nav-list" id="navList"></ul>
+    </div>
+  </nav>
+  <main class="main" id="main">
+    <article class="article" id="article">
+      <p class="eyebrow" id="eyebrow"></p>
+      <h1 class="heading" id="heading"></h1>
+      <div class="body-text" id="bodyText"></div>
+    </article>
+  </main>
+</div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Section data — replace the placeholder text with your real
+  // World Bible / Timeline / Power System / etc. content.
+  // Use simple HTML strings (e.g. "<p>...</p><p>...</p>") for body.
+  // ---------------------------------------------------------------
+  var sections = [
+    { id: "world-bible",        number: "01",  title: "World Bible",          body: "<p>Replace with your World Bible content.</p>" },
+    { id: "timeline-archive",   number: "02",  title: "Timeline Archive",     body: "<p>Replace with your Timeline Archive content.</p>" },
+    { id: "power-system",       number: "03",  title: "Power System",        body: "<p>Replace with your Power System content.</p>" },
+    { id: "faction-database",   number: "04",  title: "Faction Database",    body: "<p>Replace with your Faction Database content.</p>" },
+    { id: "character-database", number: "07",  title: "Character Database", body: "<p>Replace with your Character Database content.</p>" },
+    { id: "visual-bible",       number: "08",  title: "Visual Bible",        body: "<p>Replace with your Visual Bible content.</p>" },
+    { id: "media-canon",        number: "09",  title: "Media Canon Archive", body: "<p>Replace with your Media Canon Archive content.</p>" },
+    { id: "glossary",           number: "Apx", title: "Glossary",            body: "<p>Replace with your Glossary content.</p>" }
+  ];
+
+  var state = {
+    activeSection: sections[0].id,
+    sidebarOpen: false
+  };
+
+  var toggleTab = document.getElementById("toggleTab");
+  var backdrop = document.getElementById("backdrop");
+  var sidebar = document.getElementById("sidebar");
+  var navList = document.getElementById("navList");
+  var article = document.getElementById("article");
+  var eyebrow = document.getElementById("eyebrow");
+  var heading = document.getElementById("heading");
+  var bodyText = document.getElementById("bodyText");
+
+  function renderNav() {
+    navList.innerHTML = "";
+    sections.forEach(function (section) {
+      var li = document.createElement("li");
+      li.className = "nav-item";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      if (section.id === state.activeSection) {
+        btn.className = "active";
+        btn.setAttribute("aria-current", "page");
+      }
+      var numSpan = document.createElement("span");
+      numSpan.className = "nav-number";
+      numSpan.textContent = section.number;
+      var titleSpan = document.createElement("span");
+      titleSpan.textContent = section.title;
+      btn.appendChild(numSpan);
+      btn.appendChild(titleSpan);
+      btn.addEventListener("click", function () {
+        selectSection(section.id);
+      });
+      li.appendChild(btn);
+      navList.appendChild(li);
+    });
+  }
+
+  function renderContent() {
+    var section = sections.filter(function (s) { return s.id === state.activeSection; })[0];
+    eyebrow.textContent = section.number;
+    heading.textContent = section.title;
+    bodyText.innerHTML = section.body;
+
+    // restart the fade-in animation
+    article.style.animation = "none";
+    void article.offsetWidth; // force reflow
+    article.style.animation = "";
+  }
+
+  function setSidebarOpen(open) {
+    state.sidebarOpen = open;
+    sidebar.classList.toggle("open", open);
+    backdrop.classList.toggle("open", open);
+    sidebar.setAttribute("aria-hidden", String(!open));
+    toggleTab.setAttribute("aria-expanded", String(open));
+    toggleTab.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+  }
+
+  function selectSection(id) {
+    state.activeSection = id;
+    setSidebarOpen(false);
+    renderNav();
+    renderContent();
+  }
+
+  toggleTab.addEventListener("click", function () {
+    setSidebarOpen(!state.sidebarOpen);
+  });
+
+  backdrop.addEventListener("click", function () {
+    setSidebarOpen(false);
+  });
+
+  document.addEventListener("mousedown", function (event) {
+    if (!state.sidebarOpen) return;
+    if (sidebar.contains(event.target) || toggleTab.contains(event.target)) return;
+    setSidebarOpen(false);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && state.sidebarOpen) setSidebarOpen(false);
+  });
+
+  renderNav();
+  renderContent();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("service-worker.js").catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
